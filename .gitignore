@@ -1,3 +1,10 @@
 .env
 .env.*
 !.env.example
+
+docker/data
+docker/tmp
+
+.cache/
+.tmp/
+temp/
