@@ -1,0 +1,58 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: taller-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_BD: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+# backend:
+#   build:
+#     context: .
+#     dockerfile: ./docker/backend/dockerfile
+#   container_name: taller-backend
+#   restart: unless-stopped
+#   environment:
+#     NODE_ENV: ${NODE_ENV}
+#     PORT: ${BACKEND_PORT_INTERNAL}
+#     DATABASE_HOST: database
+#     DATABASE_PORT: 5432
+#     DATABASE_NAME: ${POSTGRES_DB}
+#     DATABASE_USER: ${POSTGRES_USER}
+#     DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+#   ports:
+#     - "${BACKEND_PORT}:${BACKEND_PORT_INTERNAL}"
+#   volumes:
+#     - ./backend:/app
+#   networks:
+#     - app_network
+
+# frontend:
+#   build:
+#     context: .
+#     dockerfile: ./docker/frontend/Dockerfile
+#   container_name: taller-frontend
+#   restart: unless-stopped
+#   environment:
+#     - API_URL: ${API_URL}
+#   ports:
+#     - "${FRONTEND_PORT}:${FRONTEND_PORT_INTERNAL}"
+#   volumes:
+#     - ./frontend:/app
+#   depends_on:
+#     - backend
+#   networks:
+#     - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
