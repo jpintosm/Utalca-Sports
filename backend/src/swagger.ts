@@ -79,7 +79,109 @@ const options = {
             },
           },
         },
+       // =====================================
+        // HORARIOS
+        // =====================================
+        Horario: {
+          type: "object",
+          required: [
+            "id_horario",
+            "id_espacio",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+            "estado",
+          ],
+          properties: {
+            id_horario: {
+              type: "integer",
+              example: 1,
+            },
+            id_espacio: {
+              type: "integer",
+              example: 1,
+            },
+            fecha: {
+              type: "string",
+              format: "date",
+              example: "2026-10-10",
+            },
+            hora_inicio: {
+              type: "string",
+              example: "09:00:00",
+            },
+            hora_fin: {
+              type: "string",
+              example: "10:00:00",
+            },
+            estado: {
+              type: "string",
+              example: "Habilitado",
+            },
+          },
+        },
 
+      DisponibilidadHorario: {
+        type: "object",
+        required: [
+          "id_horario",
+          "id_espacio",
+          "fecha",
+          "hora_inicio",
+          "hora_fin",
+          "estado",
+          "disponible",
+          "disponibilidad",
+        ],
+        properties: {
+          id_horario: {
+            type: "integer",
+            example: 1,
+          },
+
+          id_espacio: {
+            type: "integer",
+            example: 1,
+          },
+
+          fecha: {
+            type: "string",
+            format: "date",
+            example: "2026-10-10",
+          },
+
+          hora_inicio: {
+            type: "string",
+            example: "09:00:00",
+          },
+
+          hora_fin: {
+            type: "string",
+            example: "10:00:00",
+          },
+
+          estado: {
+            type: "string",
+            example: "Habilitado",
+          },
+
+          disponible: {
+            type: "boolean",
+            example: true,
+          },
+
+          disponibilidad: {
+            type: "string",
+            enum: [
+              "Disponible",
+              "Reservado",
+              "Bloqueado",
+              "Deshabilitado",
+            ],
+            example: "Disponible",
+          },
+        },
+      },
         // =====================================
         // ERRORES
         // =====================================

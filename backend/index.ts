@@ -6,6 +6,8 @@ import { errorHandler } from "./src/middlewares/error.middleware";
 import swaggerUi from "swagger-ui-express";
 import specs from "./src/swagger";
 import espacioRoutes from "./src/routes/espacio.routes";
+import horarioRoutes from "./src/routes/horario.routes";
+
 // Creamos la aplicación Express principal.
 const app = express();
 
@@ -21,6 +23,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 app.use("/api/espacios", espacioRoutes);
+
+app.use("/api/espacios", horarioRoutes);
 
 app.use(errorHandler);
 
