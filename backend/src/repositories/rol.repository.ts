@@ -1,129 +1,70 @@
-import db from "../database/db";
-import {
-  Horario,
-  DisponibilidadHorario,
-} from "../models/horario";
+import { eq } from "drizzle-orm";
 
-class HorarioRepository {
+import { drizzleDb } from "../database/db";
+import { rol } from "../database/schema";
+import { Rol } from "../models/rol";
+
+class RolRepository {
+
+  // =====================================
+  // OBTENER TODOS LOS ROLES
+  // =====================================
+
+  async findAll(): Promise<Rol[]> {
+
+    const result = await drizzleDb
+      .select()
+      .from(rol)
+      .orderBy(rol.id_rol);
+
+    return result;
+  }
+
+
+  // =====================================
+  // BUSCAR ROL POR ID
+  // =====================================
 
   async findById(
-    idHorario: string | number
-  ): Promise<Horario | undefined> {
+    idRol: string | number
+  ): Promise<Rol | undefined> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_horario,
-        id_espacio,
-        fecha::text AS fecha,
-        hora_inicio::text AS hora_inicio,
-        hora_fin::text AS hora_fin,
-        estado
-      FROM horario
-      WHERE id_horario = $1
-      `,
-      [idHorario]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(rol)
+      .where(
+        eq(
+          rol.id_rol,
+          Number(idRol)
+        )
+      )
+      .limit(1);
 
-    return result.rows[0];
+    return result[0];
   }
 
 
-  async findByEspacio(
-    idEspacio: string | number
-  ): Promise<Horario[]> {
+  // =====================================
+  // BUSCAR ROL POR NOMBRE
+  // =====================================
 
-    const result = await db.query(
-      `
-      SELECT
-        id_horario,
-        id_espacio,
-        fecha::text AS fecha,
-        hora_inicio::text AS hora_inicio,
-        hora_fin::text AS hora_fin,
-        estado
-      FROM horario
-      WHERE id_espacio = $1
-      ORDER BY fecha, hora_inicio
-      `,
-      [idEspacio]
-    );
+  async findByNombre(
+    nombre: string
+  ): Promise<Rol | undefined> {
 
-    return result.rows;
-  }
+    const result = await drizzleDb
+      .select()
+      .from(rol)
+      .where(
+        eq(
+          rol.nombre,
+          nombre
+        )
+      )
+      .limit(1);
 
-
-  async findDisponibilidad(
-    idEspacio: string | number,
-    fecha: string
-  ): Promise<DisponibilidadHorario[]> {
-
-    const result = await db.query(
-      `
-      SELECT
-        h.id_horario,
-        h.id_espacio,
-        h.fecha::text AS fecha,
-        h.hora_inicio::text AS hora_inicio,
-        h.hora_fin::text AS hora_fin,
-        h.estado,
-
-        CASE
-          WHEN h.estado <> 'Habilitado'
-            THEN false
-
-          WHEN EXISTS (
-            SELECT 1
-            FROM reserva r
-            WHERE r.id_horario = h.id_horario
-              AND r.estado = 'Activa'
-          )
-            THEN false
-
-          WHEN EXISTS (
-            SELECT 1
-            FROM bloqueo b
-            WHERE b.id_horario = h.id_horario
-          )
-            THEN false
-
-          ELSE true
-        END AS disponible,
-
-        CASE
-          WHEN h.estado <> 'Habilitado'
-            THEN 'Deshabilitado'
-
-          WHEN EXISTS (
-            SELECT 1
-            FROM reserva r
-            WHERE r.id_horario = h.id_horario
-              AND r.estado = 'Activa'
-          )
-            THEN 'Reservado'
-
-          WHEN EXISTS (
-            SELECT 1
-            FROM bloqueo b
-            WHERE b.id_horario = h.id_horario
-          )
-            THEN 'Bloqueado'
-
-          ELSE 'Disponible'
-        END AS disponibilidad
-
-      FROM horario h
-
-      WHERE h.id_espacio = $1
-        AND h.fecha = $2
-
-      ORDER BY h.hora_inicio
-      `,
-      [idEspacio, fecha]
-    );
-
-    return result.rows;
+    return result[0];
   }
 }
 
-export default HorarioRepository;
+export default RolRepository;

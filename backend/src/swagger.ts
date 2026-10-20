@@ -19,11 +19,144 @@ const options = {
     ],
 
     components: {
+      // =====================================
+      // SCHEMAS
+      // =====================================
       schemas: {
+        Bloqueo: {
+          type: "object",
+
+          required: [
+            "id_bloqueo",
+            "id_horario",
+            "motivo",
+            "fecha_creacion",
+          ],
+
+          properties: {
+
+            id_bloqueo: {
+              type: "integer",
+              example: 1,
+            },
+
+            id_horario: {
+              type: "integer",
+              example: 3,
+            },
+
+            motivo: {
+              type: "string",
+              example: "Mantención",
+            },
+
+            descripcion: {
+              type: "string",
+              nullable: true,
+              example:
+                "Mantención programada de la cancha",
+            },
+
+            fecha_creacion: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        Reserva: {
+          type: "object",
+          required: [
+            "id_reserva",
+            "id_usuario",
+            "id_horario",
+            "estado",
+            "fecha_creacion",
+          ],
+          properties: {
+            id_reserva: {
+              type: "integer",
+              example: 1,
+            },
+            id_usuario: {
+              type: "integer",
+              example: 1,
+            },
+            id_horario: {
+              type: "integer",
+              example: 3,
+            },
+            estado: {
+              type: "string",
+              example: "Activa",
+            },
+            fecha_creacion: {
+              type: "string",
+              example: "2026-10-12 22:30:00",
+            },
+          },
+        },
+
+        ReservaDetalle: {
+          type: "object",
+          required: [
+            "id_reserva",
+            "id_usuario",
+            "id_horario",
+            "estado",
+            "fecha_creacion",
+            "nombre_espacio",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+          ],
+          properties: {
+            id_reserva: {
+              type: "integer",
+              example: 1,
+            },
+            id_usuario: {
+              type: "integer",
+              example: 1,
+            },
+            id_horario: {
+              type: "integer",
+              example: 3,
+            },
+            estado: {
+              type: "string",
+              example: "Activa",
+            },
+            fecha_creacion: {
+              type: "string",
+              example: "2026-10-12 22:30:00",
+            },
+            nombre_espacio: {
+              type: "string",
+              example: "Cancha de Tenis 1",
+            },
+            ubicacion: {
+              type: "string",
+              nullable: true,
+              example: "Campus Talca",
+            },
+            fecha: {
+              type: "string",
+              format: "date",
+              example: "2026-10-15",
+            },
+            hora_inicio: {
+              type: "string",
+              example: "09:00:00",
+            },
+            hora_fin: {
+              type: "string",
+              example: "10:00:00",
+            },
+          },
+        },
         // =====================================
         // ESPACIO DEPORTIVO
         // =====================================
-
         EspacioDeportivo: {
           type: "object",
           required: [
@@ -79,8 +212,9 @@ const options = {
             },
           },
         },
-       // =====================================
-        // HORARIOS
+
+        // =====================================
+        // HORARIO
         // =====================================
         Horario: {
           type: "object",
@@ -97,23 +231,28 @@ const options = {
               type: "integer",
               example: 1,
             },
+
             id_espacio: {
               type: "integer",
               example: 1,
             },
+
             fecha: {
               type: "string",
               format: "date",
               example: "2026-10-10",
             },
+
             hora_inicio: {
               type: "string",
               example: "09:00:00",
             },
+
             hora_fin: {
               type: "string",
               example: "10:00:00",
             },
+
             estado: {
               type: "string",
               example: "Habilitado",
@@ -121,71 +260,74 @@ const options = {
           },
         },
 
-      DisponibilidadHorario: {
-        type: "object",
-        required: [
-          "id_horario",
-          "id_espacio",
-          "fecha",
-          "hora_inicio",
-          "hora_fin",
-          "estado",
-          "disponible",
-          "disponibilidad",
-        ],
-        properties: {
-          id_horario: {
-            type: "integer",
-            example: 1,
-          },
+        // =====================================
+        // DISPONIBILIDAD DE HORARIO
+        // =====================================
+        DisponibilidadHorario: {
+          type: "object",
+          required: [
+            "id_horario",
+            "id_espacio",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+            "estado",
+            "disponible",
+            "disponibilidad",
+          ],
+          properties: {
+            id_horario: {
+              type: "integer",
+              example: 1,
+            },
 
-          id_espacio: {
-            type: "integer",
-            example: 1,
-          },
+            id_espacio: {
+              type: "integer",
+              example: 1,
+            },
 
-          fecha: {
-            type: "string",
-            format: "date",
-            example: "2026-10-10",
-          },
+            fecha: {
+              type: "string",
+              format: "date",
+              example: "2026-10-10",
+            },
 
-          hora_inicio: {
-            type: "string",
-            example: "09:00:00",
-          },
+            hora_inicio: {
+              type: "string",
+              example: "09:00:00",
+            },
 
-          hora_fin: {
-            type: "string",
-            example: "10:00:00",
-          },
+            hora_fin: {
+              type: "string",
+              example: "10:00:00",
+            },
 
-          estado: {
-            type: "string",
-            example: "Habilitado",
-          },
+            estado: {
+              type: "string",
+              example: "Habilitado",
+            },
 
-          disponible: {
-            type: "boolean",
-            example: true,
-          },
+            disponible: {
+              type: "boolean",
+              example: true,
+            },
 
-          disponibilidad: {
-            type: "string",
-            enum: [
-              "Disponible",
-              "Reservado",
-              "Bloqueado",
-              "Deshabilitado",
-            ],
-            example: "Disponible",
+            disponibilidad: {
+              type: "string",
+              enum: [
+                "Disponible",
+                "Reservado",
+                "Bloqueado",
+                "Deshabilitado",
+              ],
+              example: "Disponible",
+            },
           },
         },
-      },
-        // =====================================
-        // ERRORES
-        // =====================================
 
+        // =====================================
+        // ERROR
+        // =====================================
         Error: {
           type: "object",
           required: ["message"],
@@ -197,6 +339,9 @@ const options = {
           },
         },
 
+        // =====================================
+        // ERROR INTERNO
+        // =====================================
         InternalError: {
           type: "object",
           required: ["message", "error"],
@@ -212,59 +357,11 @@ const options = {
             },
           },
         },
-
-        // =====================================
-        // PRODUCTOS
-        // TEMPORAL: BASE DEL PROFESOR
-        // =====================================
-
-        Product: {
-          type: "object",
-          required: ["id", "name", "price"],
-          properties: {
-            id: {
-              type: "integer",
-              example: 1,
-            },
-
-            name: {
-              type: "string",
-              example: "Teclado",
-            },
-
-            price: {
-              type: "number",
-              example: 49.99,
-            },
-          },
-        },
-
-        ProductInput: {
-          type: "object",
-          required: ["name", "price"],
-          properties: {
-            name: {
-              type: "string",
-              minLength: 1,
-              description:
-                "Nombre del producto; no puede contener solo espacios",
-              example: "Teclado",
-            },
-
-            price: {
-              type: "number",
-              minimum: 0,
-              exclusiveMinimum: true,
-              example: 49.99,
-            },
-          },
-        },
       },
 
       // =====================================
       // PARÁMETROS REUTILIZABLES
       // =====================================
-
       parameters: {
         EspacioId: {
           name: "id",
@@ -277,12 +374,11 @@ const options = {
           },
         },
 
-        // Temporal: base del profesor
-        ProductId: {
+          ReservaId: {
           name: "id",
           in: "path",
           required: true,
-          description: "Identificador del producto",
+          description: "Identificador de la reserva",
           schema: {
             type: "integer",
             example: 1,
@@ -293,7 +389,6 @@ const options = {
       // =====================================
       // RESPUESTAS REUTILIZABLES
       // =====================================
-
       responses: {
         BadRequest: {
           description: "Solicitud inválida",
@@ -332,7 +427,8 @@ const options = {
                 $ref: "#/components/schemas/Error",
               },
               example: {
-                message: "No tiene permisos para realizar esta acción",
+                message:
+                  "No tiene permisos para realizar esta acción",
               },
             },
           },
@@ -346,22 +442,8 @@ const options = {
                 $ref: "#/components/schemas/Error",
               },
               example: {
-                message: "Espacio deportivo no encontrado",
-              },
-            },
-          },
-        },
-
-        // Temporal: base del profesor
-        ProductNotFound: {
-          description: "Producto no encontrado",
-          content: {
-            "application/json": {
-              schema: {
-                $ref: "#/components/schemas/Error",
-              },
-              example: {
-                message: "Producto no encontrado",
+                message:
+                  "Espacio deportivo no encontrado",
               },
             },
           },
@@ -382,7 +464,6 @@ const options = {
       // =====================================
       // SEGURIDAD JWT
       // =====================================
-
       securitySchemes: {
         bearerAuth: {
           type: "http",
@@ -395,7 +476,8 @@ const options = {
     },
   },
 
-  // Swagger buscará documentación en todas las rutas
+  // Swagger buscará documentación
+  // en todos los archivos de routes.
   apis: ["./src/routes/*.ts"],
 };
 

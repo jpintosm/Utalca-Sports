@@ -1,52 +1,64 @@
-import db from "../database/db";
+import {
+  eq,
+  sql,
+} from "drizzle-orm";
+
+import { drizzleDb } from "../database/db";
+import { bloqueo } from "../database/schema";
 import { Bloqueo } from "../models/bloqueo";
 
+
 class BloqueoRepository {
+
+  // =====================================
+  // BUSCAR BLOQUEO POR ID
+  // =====================================
 
   async findById(
     idBloqueo: string | number
   ): Promise<Bloqueo | undefined> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_bloqueo,
-        id_horario,
-        motivo,
-        descripcion,
-        fecha_creacion::text AS fecha_creacion
-      FROM bloqueo
-      WHERE id_bloqueo = $1
-      `,
-      [idBloqueo]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(bloqueo)
+      .where(
+        eq(
+          bloqueo.id_bloqueo,
+          Number(idBloqueo)
+        )
+      )
+      .limit(1);
 
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // BUSCAR BLOQUEO POR HORARIO
+  // =====================================
 
   async findByHorario(
     idHorario: string | number
   ): Promise<Bloqueo | undefined> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_bloqueo,
-        id_horario,
-        motivo,
-        descripcion,
-        fecha_creacion::text AS fecha_creacion
-      FROM bloqueo
-      WHERE id_horario = $1
-      LIMIT 1
-      `,
-      [idHorario]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(bloqueo)
+      .where(
+        eq(
+          bloqueo.id_horario,
+          Number(idHorario)
+        )
+      )
+      .limit(1);
 
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // CREAR BLOQUEO
+  // =====================================
 
   async create(
     idHorario: number,
@@ -54,60 +66,42 @@ class BloqueoRepository {
     descripcion: string | null
   ): Promise<Bloqueo> {
 
-    const result = await db.query(
-      `
-      INSERT INTO bloqueo (
-        id_horario,
+    const result = await drizzleDb
+      .insert(bloqueo)
+      .values({
+        id_horario: idHorario,
         motivo,
         descripcion,
-        fecha_creacion
-      )
-      VALUES (
-        $1,
-        $2,
-        $3,
-        CURRENT_TIMESTAMP
-      )
+        fecha_creacion:
+          sql`CURRENT_TIMESTAMP`,
+      })
+      .returning();
 
-      RETURNING
-        id_bloqueo,
-        id_horario,
-        motivo,
-        descripcion,
-        fecha_creacion::text AS fecha_creacion
-      `,
-      [
-        idHorario,
-        motivo,
-        descripcion,
-      ]
-    );
-
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // ELIMINAR BLOQUEO
+  // =====================================
 
   async remove(
     idBloqueo: string | number
   ): Promise<Bloqueo | undefined> {
 
-    const result = await db.query(
-      `
-      DELETE FROM bloqueo
-      WHERE id_bloqueo = $1
+    const result = await drizzleDb
+      .delete(bloqueo)
+      .where(
+        eq(
+          bloqueo.id_bloqueo,
+          Number(idBloqueo)
+        )
+      )
+      .returning();
 
-      RETURNING
-        id_bloqueo,
-        id_horario,
-        motivo,
-        descripcion,
-        fecha_creacion::text AS fecha_creacion
-      `,
-      [idBloqueo]
-    );
-
-    return result.rows[0];
+    return result[0];
   }
 }
+
 
 export default BloqueoRepository;

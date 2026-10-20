@@ -1,156 +1,217 @@
-import db from "../database/db";
+import {
+  and,
+  eq,
+  sql,
+} from "drizzle-orm";
+
+import { drizzleDb } from "../database/db";
+
+import {
+  reserva,
+  horario,
+  espacioDeportivo,
+} from "../database/schema";
+
 import {
   Reserva,
   ReservaDetalle,
 } from "../models/reserva";
 
+
 class ReservaRepository {
+
+  // =====================================
+  // BUSCAR RESERVA POR ID
+  // =====================================
 
   async findById(
     idReserva: string | number
   ): Promise<Reserva | undefined> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_reserva,
-        id_usuario,
-        id_horario,
-        estado,
-        fecha_creacion::text AS fecha_creacion
-      FROM reserva
-      WHERE id_reserva = $1
-      `,
-      [idReserva]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(reserva)
+      .where(
+        eq(
+          reserva.id_reserva,
+          Number(idReserva)
+        )
+      )
+      .limit(1);
 
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // BUSCAR RESERVA ACTIVA POR HORARIO
+  // =====================================
 
   async findActivaByHorario(
     idHorario: string | number
   ): Promise<Reserva | undefined> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_reserva,
-        id_usuario,
-        id_horario,
-        estado,
-        fecha_creacion::text AS fecha_creacion
-      FROM reserva
-      WHERE id_horario = $1
-        AND estado = 'Activa'
-      LIMIT 1
-      `,
-      [idHorario]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(reserva)
+      .where(
+        and(
+          eq(
+            reserva.id_horario,
+            Number(idHorario)
+          ),
+          eq(
+            reserva.estado,
+            "Activa"
+          )
+        )
+      )
+      .limit(1);
 
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // OBTENER RESERVAS DE UN USUARIO
+  // =====================================
 
   async findByUsuario(
     idUsuario: string | number
   ): Promise<ReservaDetalle[]> {
 
-    const result = await db.query(
-      `
-      SELECT
-        r.id_reserva,
-        r.id_usuario,
-        r.id_horario,
-        r.estado,
-        r.fecha_creacion::text AS fecha_creacion,
+    const result = await drizzleDb
+      .select({
+        id_reserva:
+          reserva.id_reserva,
 
-        e.nombre AS nombre_espacio,
-        e.ubicacion,
+        id_usuario:
+          reserva.id_usuario,
 
-        h.fecha::text AS fecha,
-        h.hora_inicio::text AS hora_inicio,
-        h.hora_fin::text AS hora_fin
+        id_horario:
+          reserva.id_horario,
 
-      FROM reserva r
+        estado:
+          reserva.estado,
 
-      JOIN horario h
-        ON r.id_horario = h.id_horario
+        fecha_creacion:
+          reserva.fecha_creacion,
 
-      JOIN espacio_deportivo e
-        ON h.id_espacio = e.id_espacio
+        nombre_espacio:
+          espacioDeportivo.nombre,
 
-      WHERE r.id_usuario = $1
+        ubicacion:
+          espacioDeportivo.ubicacion,
 
-      ORDER BY h.fecha, h.hora_inicio
-      `,
-      [idUsuario]
-    );
+        fecha:
+          horario.fecha,
 
-    return result.rows;
+        hora_inicio:
+          horario.hora_inicio,
+
+        hora_fin:
+          horario.hora_fin,
+      })
+
+      .from(reserva)
+
+      .innerJoin(
+        horario,
+        eq(
+          reserva.id_horario,
+          horario.id_horario
+        )
+      )
+
+      .innerJoin(
+        espacioDeportivo,
+        eq(
+          horario.id_espacio,
+          espacioDeportivo.id_espacio
+        )
+      )
+
+      .where(
+        eq(
+          reserva.id_usuario,
+          Number(idUsuario)
+        )
+      )
+
+      .orderBy(
+        horario.fecha,
+        horario.hora_inicio
+      );
+
+    return result;
   }
 
+
+  // =====================================
+  // CREAR RESERVA
+  // =====================================
 
   async create(
     idUsuario: number,
     idHorario: number
   ): Promise<Reserva> {
 
-    const result = await db.query(
-      `
-      INSERT INTO reserva (
-        id_usuario,
-        id_horario,
-        estado,
-        fecha_creacion
-      )
-      VALUES (
-        $1,
-        $2,
-        'Activa',
-        CURRENT_TIMESTAMP
-      )
+    const result = await drizzleDb
+      .insert(reserva)
+      .values({
+        id_usuario: idUsuario,
+        id_horario: idHorario,
+        estado: "Activa",
 
-      RETURNING
-        id_reserva,
-        id_usuario,
-        id_horario,
-        estado,
-        fecha_creacion::text AS fecha_creacion
-      `,
-      [idUsuario, idHorario]
-    );
+        fecha_creacion:
+          sql`CURRENT_TIMESTAMP`,
+      })
+      .returning();
 
-    return result.rows[0];
+    return result[0];
   }
 
+
+  // =====================================
+  // CANCELAR RESERVA
+  // =====================================
 
   async cancel(
     idReserva: string | number,
     idUsuario: string | number
   ): Promise<Reserva | undefined> {
 
-    const result = await db.query(
-      `
-      UPDATE reserva
-      SET estado = 'Cancelada'
+    const result = await drizzleDb
+      .update(reserva)
 
-      WHERE id_reserva = $1
-        AND id_usuario = $2
-        AND estado = 'Activa'
+      .set({
+        estado: "Cancelada",
+      })
 
-      RETURNING
-        id_reserva,
-        id_usuario,
-        id_horario,
-        estado,
-        fecha_creacion::text AS fecha_creacion
-      `,
-      [idReserva, idUsuario]
-    );
+      .where(
+        and(
+          eq(
+            reserva.id_reserva,
+            Number(idReserva)
+          ),
 
-    return result.rows[0];
+          eq(
+            reserva.id_usuario,
+            Number(idUsuario)
+          ),
+
+          eq(
+            reserva.estado,
+            "Activa"
+          )
+        )
+      )
+
+      .returning();
+
+    return result[0];
   }
 }
+
 
 export default ReservaRepository;

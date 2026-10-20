@@ -1,103 +1,250 @@
-import db from "../database/db";
+import {
+  and,
+  eq,
+} from "drizzle-orm";
+
+import { drizzleDb } from "../database/db";
+
+import {
+  horario,
+  reserva,
+  bloqueo,
+} from "../database/schema";
+
 import {
   Horario,
   DisponibilidadHorario,
 } from "../models/horario";
 
+
 class HorarioRepository {
+
+  // =====================================
+  // BUSCAR HORARIO POR ID
+  // =====================================
+
+  async findById(
+    idHorario: string | number
+  ): Promise<Horario | undefined> {
+
+    const result = await drizzleDb
+      .select()
+      .from(horario)
+      .where(
+        eq(
+          horario.id_horario,
+          Number(idHorario)
+        )
+      )
+      .limit(1);
+
+    return result[0];
+  }
+
+
+  // =====================================
+  // OBTENER HORARIOS DE UN ESPACIO
+  // =====================================
 
   async findByEspacio(
     idEspacio: string | number
   ): Promise<Horario[]> {
 
-    const result = await db.query(
-      `
-      SELECT
-        id_horario,
-        id_espacio,
-        fecha,
-        hora_inicio,
-        hora_fin,
-        estado
-      FROM horario
-      WHERE id_espacio = $1
-      ORDER BY fecha, hora_inicio
-      `,
-      [idEspacio]
-    );
+    const result = await drizzleDb
+      .select()
+      .from(horario)
+      .where(
+        eq(
+          horario.id_espacio,
+          Number(idEspacio)
+        )
+      )
+      .orderBy(
+        horario.fecha,
+        horario.hora_inicio
+      );
 
-    return result.rows;
+    return result;
   }
 
+
+  // =====================================
+  // DISPONIBILIDAD POR ESPACIO Y FECHA
+  // =====================================
 
   async findByEspacioAndFecha(
     idEspacio: string | number,
     fecha: string
   ): Promise<DisponibilidadHorario[]> {
 
-    const result = await db.query(
-      `
-      SELECT
-        h.id_horario,
-        h.id_espacio,
-        h.fecha,
-        h.hora_inicio,
-        h.hora_fin,
-        h.estado,
+    // Reservas activas agrupadas por horario.
+    // Así obtenemos como máximo una coincidencia
+    // por cada horario.
+    const reservasActivas = drizzleDb
+      .select({
+        id_horario: reserva.id_horario,
+      })
+      .from(reserva)
+      .where(
+        eq(
+          reserva.estado,
+          "Activa"
+        )
+      )
+      .groupBy(
+        reserva.id_horario
+      )
+      .as("reservas_activas");
 
-        CASE
-          WHEN h.estado <> 'Habilitado' THEN false
 
-          WHEN EXISTS (
-            SELECT 1
-            FROM reserva r
-            WHERE r.id_horario = h.id_horario
-              AND r.estado = 'Activa'
-          ) THEN false
+    // Bloqueos agrupados por horario.
+    const bloqueosExistentes = drizzleDb
+      .select({
+        id_horario: bloqueo.id_horario,
+      })
+      .from(bloqueo)
+      .groupBy(
+        bloqueo.id_horario
+      )
+      .as("bloqueos_existentes");
 
-          WHEN EXISTS (
-            SELECT 1
-            FROM bloqueo b
-            WHERE b.id_horario = h.id_horario
-          ) THEN false
 
-          ELSE true
-        END AS disponible,
+    const result = await drizzleDb
+      .select({
+        id_horario:
+          horario.id_horario,
 
-        CASE
-          WHEN h.estado <> 'Habilitado'
-            THEN 'Deshabilitado'
+        id_espacio:
+          horario.id_espacio,
 
-          WHEN EXISTS (
-            SELECT 1
-            FROM reserva r
-            WHERE r.id_horario = h.id_horario
-              AND r.estado = 'Activa'
+        fecha:
+          horario.fecha,
+
+        hora_inicio:
+          horario.hora_inicio,
+
+        hora_fin:
+          horario.hora_fin,
+
+        estado:
+          horario.estado,
+
+        id_reserva_activa:
+          reservasActivas.id_horario,
+
+        id_bloqueo:
+          bloqueosExistentes.id_horario,
+      })
+
+      .from(horario)
+
+      .leftJoin(
+        reservasActivas,
+        eq(
+          horario.id_horario,
+          reservasActivas.id_horario
+        )
+      )
+
+      .leftJoin(
+        bloqueosExistentes,
+        eq(
+          horario.id_horario,
+          bloqueosExistentes.id_horario
+        )
+      )
+
+      .where(
+        and(
+          eq(
+            horario.id_espacio,
+            Number(idEspacio)
+          ),
+          eq(
+            horario.fecha,
+            fecha
           )
-            THEN 'Reservado'
+        )
+      )
 
-          WHEN EXISTS (
-            SELECT 1
-            FROM bloqueo b
-            WHERE b.id_horario = h.id_horario
-          )
-            THEN 'Bloqueado'
+      .orderBy(
+        horario.hora_inicio
+      );
 
-          ELSE 'Disponible'
-        END AS disponibilidad
 
-      FROM horario h
+    return result.map((item) => {
 
-      WHERE h.id_espacio = $1
-        AND h.fecha = $2
+      let disponibilidad =
+        "Disponible";
 
-      ORDER BY h.hora_inicio
-      `,
-      [idEspacio, fecha]
+      if (
+        item.estado !== "Habilitado"
+      ) {
+        disponibilidad =
+          "Deshabilitado";
+      }
+
+      else if (
+        item.id_reserva_activa !== null
+      ) {
+        disponibilidad =
+          "Reservado";
+      }
+
+      else if (
+        item.id_bloqueo !== null
+      ) {
+        disponibilidad =
+          "Bloqueado";
+      }
+
+
+      const disponible =
+        disponibilidad === "Disponible";
+
+
+      return {
+        id_horario:
+          item.id_horario,
+
+        id_espacio:
+          item.id_espacio,
+
+        fecha:
+          item.fecha,
+
+        hora_inicio:
+          item.hora_inicio,
+
+        hora_fin:
+          item.hora_fin,
+
+        estado:
+          item.estado,
+
+        disponible,
+
+        disponibilidad,
+      };
+    });
+  }
+
+
+  // =====================================
+  // ALIAS PARA COMPATIBILIDAD
+  // =====================================
+
+  async findDisponibilidad(
+    idEspacio: string | number,
+    fecha: string
+  ): Promise<DisponibilidadHorario[]> {
+
+    return await this.findByEspacioAndFecha(
+      idEspacio,
+      fecha
     );
-
-    return result.rows;
   }
 }
+
 
 export default HorarioRepository;
